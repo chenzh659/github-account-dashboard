@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 账号全景巡检与健康度控制台 - 2026年08月04日</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Noto+Serif+SC:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-paper: #FAF7F2;
+            --card-bg: #FFFFFF;
+            --card-subtle: #F3EFE6;
+            --text-main: #1F1A17;
+            --text-muted: #6E665E;
+            --text-light: #8C837A;
+            --accent-coral: #D97757;
+            --accent-dark: #8C3B24;
+            --accent-soft: #F2E3D5;
+            --border-color: #E6DFD5;
+            --border-dark: #D4C9B8;
+            --shadow-subtle: rgba(31, 26, 23, 0.04);
+            --shadow-hover: rgba(217, 119, 87, 0.12);
+        }
+
+        [data-theme="dark"] {
+            --bg-paper: #181614;
+            --card-bg: #23201D;
+            --card-subtle: #2C2824;
+            --text-main: #ECE6DE;
+            --text-muted: #B3AAA0;
+            --text-light: #8C837A;
+            --accent-coral: #E08769;
+            --accent-dark: #F0A58C;
+            --accent-soft: #382A24;
+            --border-color: #36312B;
+            --border-dark: #4A433B;
+            --shadow-subtle: rgba(0, 0, 0, 0.2);
+            --shadow-hover: rgba(224, 135, 105, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            font-family: 'Noto Serif SC', 'Merriweather', 'Georgia', serif;
+            background-color: var(--bg-paper);
+            color: var(--text-main);
+            line-height: 1.85;
+            padding: 0;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background-color: var(--accent-coral);
+            width: 0%;
+            z-index: 1000;
+            transition: width 0.1s ease-out;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-paper);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-title {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent-coral);
+            font-weight: 700;
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn-toggle {
+            background-color: var(--card-subtle);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-weight: 600;
+        }
+
+        .btn-toggle:hover {
+            border-color: var(--accent-coral);
+            color: var(--accent-coral);
+        }
+
+        .header {
+            padding: 4rem 2rem 3rem;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-paper);
+        }
+
+        .container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .header-meta {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent-coral);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-meta::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-coral);
+            border-radius: 50%;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.25;
+            margin-bottom: 1rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            font-style: italic;
+            max-width: 850px;
+            font-weight: 300;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin: 2.5rem 0 3rem;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px var(--shadow-subtle);
+        }
+
+        .stat-label {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-dark);
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+
+        .stat-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin: 2.5rem 0 1.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-coral);
+            background-color: var(--accent-soft);
+        }
+
+        .editorial-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.75rem 0;
+            font-size: 0.95rem;
+        }
+
+        .editorial-table th, .editorial-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .editorial-table th {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border-dark);
+        }
+
+        .badge-status {
+            display: inline-block;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .badge-active { background-color: #E6F4EA; color: #137333; }
+        .badge-stale { background-color: #FEF7E0; color: #B06000; }
+        .badge-alert { background-color: #FCE8E6; color: #C5221F; }
+
+        .callout {
+            background-color: var(--card-subtle);
+            border-left: 3px solid var(--accent-coral);
+            padding: 1.5rem 1.75rem;
+            margin: 1.75rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .callout-title {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-dark);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: var(--accent-dark);
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .footer {
+            border-top: 1px solid var(--border-color);
+            padding: 3.5rem 0;
+            background-color: var(--bg-paper);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress-bar"></div>
+
+    <nav class="top-nav">
+        <div class="nav-title">GitHub Asset & Hygiene Control · chenzh659</div>
+        <div class="controls-group">
+            <button class="btn-toggle" onclick="copyDashboardSummary()">
+                <span>📋</span> 复制健康度摘要
+            </button>
+            <button class="btn-toggle" onclick="toggleTheme()">
+                <span id="theme-icon">🌙</span> <span id="theme-text">夜间模式</span>
+            </button>
+        </div>
+    </nav>
+
+    <header class="header">
+        <div class="container">
+            <div class="header-meta">
+                <span>ACCOUNT-WIDE AUTOMATED AUDIT</span>
+                <span>·</span>
+                <span>2026年08月04日</span>
+            </div>
+            <h1>GitHub 全账户资产巡检与健康度控制台</h1>
+            <p>全自动监控账号 @chenzh659 名下所有开源与私有代码资产的安全、规范度与活跃指标。</p>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">账户健康得分</div>
+                <div class="stat-value">75 <span style="font-size:1.1rem; color:var(--text-muted);">/ 100</span></div>
+                <div class="stat-desc">根据规范度、许可协议配置及活跃度计算。</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">总代码仓库数</div>
+                <div class="stat-value">18 库</div>
+                <div class="stat-desc">累计获得 Star: 1 · Forks: 0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">活跃仓库比例</div>
+                <div class="stat-value">100%</div>
+                <div class="stat-desc">近 180 天内有 Commit 或 Code Update</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">待优化项</div>
+                <div class="stat-value">8 项</div>
+                <div class="stat-desc">缺少仓库描述: 1 · 缺 License: 7</div>
+            </div>
+        </div>
+
+        <div class="callout">
+            <div class="callout-title">巡检建议 / Audit Recommendation</div>
+            <p>全账户整体健康状况良好。建议为缺少描述的仓库补全 Description，并为未配置开源协议的项目添加标准 License 文件，以提升开源影响力与规范度。</p>
+        </div>
+
+        <h2 class="section-heading" style="font-size:1.5rem; margin-top:2.5rem; border-bottom:2px solid var(--text-main); padding-bottom:0.5rem;">📁 仓库巡检与状态明细 (Repository Audit)</h2>
+
+        <table class="editorial-table">
+            <thead>
+                <tr>
+                    <th>仓库名称</th>
+                    <th>主要语言</th>
+                    <th>星标 / Fork</th>
+                    <th>开源协议</th>
+                    <th>最后更新</th>
+                    <th>健康度状态</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/github-daily-trending" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">github-daily-trending</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">Daily automated trending open source projects briefing</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">HTML</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">未配置 License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-08-03</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span> <span class="badge-status badge-alert">需补全信息</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/ai-daily-report" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">ai-daily-report</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">Automated AI Industry Daily Report (Anthropic Editorial Style)</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">HTML</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">未配置 License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-08-03</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span> <span class="badge-status badge-alert">需补全信息</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/wechat-article-exporter" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">wechat-article-exporter</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">一款在线的 微信公众号文章批量下载 工具，支持导出阅读量与评论数据，无需搭建任何环境，可通过 在线网站 使用，支持 docker 私有化部署和 Cloudflare 部署。  支持下载各种文件格式，其中 HTML 格式可100%还原文章排版与样式。</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">配置文件/文档</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">MIT License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-17</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/oh-my-pi" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">oh-my-pi</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">⌥  AI Coding agent for the terminal — hash-anchored edits, optimized tool harness, LSP, Python, browser, subagents, and more</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">配置文件/文档</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">MIT License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-26</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/llm-post-training-lab" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">llm-post-training-lab</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">Chinese e-commerce CS LLM post-training lab: SFT (LoRA/QLoRA) → DPO → eval → vLLM bench</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">Python</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">Apache License 2.0</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-25</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/DeepAudit-agent-runtime" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">DeepAudit-agent-runtime</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">DeepAudit v3 Agent Runtime refactor (M0–M11): LangGraph + Pydantic dual-path experimental branch</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">Python</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">GNU Affero General Public License v3.0</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-08-01</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/fish-short-drama-platform" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">fish-short-drama-platform</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">fish的短剧平台</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">配置文件/文档</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">MIT License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-26</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/travel-assistant" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">travel-assistant</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">🗺️ A travel decision assistant — weather forecasts + route maps + transport mode analysis to generate smart pre-trip advice. </div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">JavaScript</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">MIT License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-18</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/event-analytics-api" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">event-analytics-api</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">User behavior collection & real-time metrics backend (FastAPI + Redis Streams + ARQ + Prometheus)</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">Python</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">MIT License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-18</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/wechat-article-library" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">wechat-article-library</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">Private WeChat official-account article downloader + intelligent library (Nuxt 3 + PostgreSQL). MIT.</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">TypeScript</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">MIT License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-18</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/business-analytics-casebook" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">business-analytics-casebook</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">Business analytics casebook: ecommerce / SaaS / growth with DuckDB, metric lineage, experiment rigor (SRM/MDE), and decision briefs.</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">Python</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">MIT License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-18</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/chiv_s_website" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">chiv_s_website</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">A bilingual personal portfolio built with Next.js, React, TypeScript, and Tailwind CSS — showcasing projects, technical writing, and creative work.</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">TypeScript</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">未配置 License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-17</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span> <span class="badge-status badge-alert">需补全信息</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/my_blog" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">my_blog</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">未提供仓库描述</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">MDX</strong></td>
+                    <td>★ 1 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">未配置 License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-17</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span> <span class="badge-status badge-alert">需补全信息</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/nightmotivation" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">nightmotivation</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">🌙 A night-ambiance daily motivation app — one quote a day, with stunning night scenery backgrounds. Built with Node.js + Express + SQLite.</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">HTML</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">未配置 License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-17</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span> <span class="badge-status badge-alert">需补全信息</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/SYSU-Arxiv" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">SYSU-Arxiv</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">学习资料和真题开源社区</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">配置文件/文档</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">未配置 License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-07-03</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span> <span class="badge-status badge-alert">需补全信息</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/cc-switch" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">cc-switch</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">A cross-platform desktop All-in-One assistant for Claude Code, Codex, OpenCode, OpenClaw, Gemini CLI & Hermes Agent. Only official website: ccswitch.io</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">配置文件/文档</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">MIT License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-06-16</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/DeepAudit-3.0.0" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">DeepAudit-3.0.0</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">初步实现了静态二进制文件审计能力</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">Python</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">未配置 License</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-04-28</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span> <span class="badge-status badge-alert">需补全信息</span></td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="https://github.com/chenzh659/DeepAudit-1" target="_blank" style="color:var(--accent-dark); font-weight:700; text-decoration:none;">DeepAudit-1</a>
+                        <div style="font-size:0.825rem; color:var(--text-muted); margin-top:0.2rem;">DeepAudit：人人拥有的 AI 黑客战队，让漏洞挖掘触手可及。国内首个开源的代码漏洞挖掘多智能体系统。小白一键部署运行，自主协作审计 + 自动化沙箱 PoC 验证。支持 Ollama 私有部署 ，一键生成报告。支持中转站。​让安全不再昂贵，让审计不再复杂。</div>
+                    </td>
+                    <td><strong style="color:var(--text-main);">配置文件/文档</strong></td>
+                    <td>★ 0 · ⑂ 0</td>
+                    <td style="font-size:0.85rem;">GNU Affero General Public License v3.0</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">2026-04-01</td>
+                    <td><span class="badge-status badge-active">活跃 Active</span></td>
+                </tr>
+
+            </tbody>
+        </table>
+
+    </div>
+
+    <div class="toast" id="toast">已成功复制账号健康度报告摘要！</div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>GitHub 账号全景巡检与健康度控制台 · chenzh659 · 2026年08月04日</p>
+            <p style="font-style:italic; font-size:0.85rem; margin-top:0.5rem; color:var(--text-light);">“Continuous inspection builds sustainable software engineering.”</p>
+        </div>
+    </footer>
+
+    <script>
+        window.addEventListener('scroll', () => {
+            const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById('progress-bar').style.width = scrolled + '%';
+        });
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            document.getElementById('theme-icon').textContent = newTheme === 'light' ? '🌙' : '☀️';
+            document.getElementById('theme-text').textContent = newTheme === 'light' ? '夜间模式' : '日光模式';
+        }
+
+        function copyDashboardSummary() {
+            const summaryText = "【GitHub 账号健康度巡检 2026年08月04日】\n账号: @chenzh659\n健康得分: 75/100\n总仓库数: 18\n活跃比例: 100%\n待优化项: 8 项";
+            navigator.clipboard.writeText(summaryText).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2500);
+            });
+        }
+    </script>
+</body>
+</html>

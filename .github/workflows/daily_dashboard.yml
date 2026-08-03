@@ -1,0 +1,35 @@
+name: GitHub Account Health Dashboard Generator
+
+on:
+  schedule:
+    # 每天 UTC 01:00 (相当北京时间早 9:00) 自动触发全账号巡检
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  inspect-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run GitHub Account Inspection
+        run: |
+          python generate_dashboard.py
+
+      - name: Commit & Push Dashboard Updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add index.html reports/
+          git diff-index --quiet HEAD || git commit -m "auto: update GitHub account health audit for $(date +'%Y-%m-%d')"
+          git push
